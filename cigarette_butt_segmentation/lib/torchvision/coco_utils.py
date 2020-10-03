@@ -8,7 +8,7 @@ import os
 
 from pycocotools import mask as coco_mask
 
-from transforms import Compose
+from .detection_transforms import Compose
 
 
 class FilterAndRemapCocoCategories(object):
@@ -42,7 +42,7 @@ def convert_coco_poly_to_mask(segmentations, height, width):
         masks = torch.zeros((0, height, width), dtype=torch.uint8)
     return masks
 
-
+# From vision/references/detection/coco_utils.py 
 class ConvertCocoPolysToMask(object):
     def __call__(self, image, anno):
         w, h = image.size
@@ -61,6 +61,19 @@ class ConvertCocoPolysToMask(object):
         target = Image.fromarray(target.numpy())
         return image, target
 
+        target = {}
+        target["boxes"] = boxes
+        target["labels"] = classes
+        target["masks"] = masks
+        target["image_id"] = image_id
+        if keypoints is not None:
+            target["keypoints"] = keypoints
+
+        # for conversion to coco api
+        area = torch.tensor([obj["area"] for obj in anno])
+        iscrowd = torch.tensor([obj["iscrowd"] for obj in anno])
+        target["area"] = area
+        target["iscrowd"] = iscrowd
 
 def _coco_remove_images_without_annotations(dataset, cat_list=None):
     def _has_valid_annotation(anno):

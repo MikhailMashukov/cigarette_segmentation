@@ -8,7 +8,7 @@ from torch import nn
 import torchvision
 
 # from coco_utils import get_coco
-from . import transforms as T
+# from . import transforms as T
 from . import utils
 
 def get_dataset(name, image_set, transform):
@@ -114,7 +114,7 @@ def train_one_epoch(model, criterion, optimizer, data_loader, lr_scheduler, devi
     header = 'Epoch: [{}]'.format(epoch)
     for image, target in metric_logger.log_every(data_loader, print_freq, header):
         image, target = image.to(device), target.to(device)
-        output = model(image)
+        output = model(image, target)
         loss = criterion(output, target)
 
         optimizer.zero_grad()
