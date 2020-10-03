@@ -308,3 +308,15 @@ def init_distributed_mode(args):
                                          world_size=args.world_size, rank=args.rank)
     torch.distributed.barrier()
     setup_for_distributed(args.rank == 0)
+
+
+def images_to_device(images, device):
+    if not isinstance(images, (list, tuple)):
+        images = [images]
+    return list(image.to(device) for image in images)
+
+def targets_to_device(targets, device):
+    if not isinstance(targets, (list, tuple)):
+        targets = [targets]
+    return [{k: v.to(device) for k, v in t.items()} for t in targets]
+

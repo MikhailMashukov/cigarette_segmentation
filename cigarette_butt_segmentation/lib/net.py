@@ -10,9 +10,10 @@ import numpy as np
 import os
 
 import torchvision
-from .torchvision import transforms as T
+# from .torchvision import transforms as T
 from torchvision.transforms import functional as F
-from lib import utils
+# from lib import utils
+from . import utils
 
 # import DeepOptions
 
@@ -112,20 +113,22 @@ class CigDataset(torch.utils.data.Dataset):
         # because each color corresponds to a different instance
         # with 0 being background
         mask = utils.get_mask(self.img_ids[idx], self.annotations) 
+        # print(type(mask), mask)
 
         # img = np.array(img)
 
-        # print(type(img))
-        mask = np.array(mask)
-        # print('loaded', img.size, mask.shape, mask.dtype)
-        # mask = np.array(mask, dtype=np.uint8)
-        # print('converted')
-        mask[mask > 0] = 1
-        # mask = torch.as_tensor(mask, dtype=torch.uint8)
-        # target = torchvision.transforms.ToPILImage()(mask)
-        target = Image.fromarray(mask)
+        # # print(type(img))
+        # mask = np.array(mask)
+        # # print('loaded', img.size, mask.shape, mask.dtype)
+        # # mask = np.array(mask, dtype=np.uint8)
+        # # print('converted')
+        # mask[mask > 0] = 1
+        # # mask = torch.as_tensor(mask, dtype=torch.uint8)
+        # # target = torchvision.transforms.ToPILImage()(mask)
+        # target = Image.fromarray(mask)
+        target = self._create_target(mask, idx)
 
-        import inspect
+        # import inspect
 
         if self.transform is not None:
             # print('transform', type(self.transform), inspect.getsource(self.transform))
@@ -138,6 +141,46 @@ class CigDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.imgs)
+
+    def _create_target(self, mask, img_idx):
+        # instances are encoded as different colors
+        obj_ids = np.unique(mask)
+        # first id is the background, so remove it
+        obj_ids = obj_ids[1:]
+
+        # split the color-encoded mask into a set
+        # of binary masks
+        masks = mask == obj_ids[:, None, None]
+
+        # get bounding box coordinates for each mask
+        num_objs = len(obj_ids)
+        boxes = []
+        for i in range(num_objs):
+            pos = np.where(masks[i])
+            xmin = np.min(pos[1])
+            xmax = np.max(pos[1])
+            ymin = np.min(pos[0])
+            ymax = np.max(pos[0])
+            boxes.append([xmin, ymin, xmax, ymax])
+
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)
+        # there is only one class
+        labels = torch.ones((num_objs,), dtype=torch.int64)
+        masks = torch.as_tensor(masks, dtype=torch.uint8)
+
+        image_id = torch.tensor([img_idx])
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        # suppose all instances are not crowd
+        iscrowd = torch.zeros((num_objs,), dtype=torch.int64)
+
+        target = {}
+        target["boxes"] = boxes
+        target["labels"] = labels
+        target["masks"] = masks
+        target["image_id"] = image_id
+        target["area"] = area
+        target["iscrowd"] = iscrowd
+        return target
 
 if 0:
 # ChipDataset
@@ -623,9 +666,9 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 
       
-def get_instance_segmentation_model(num_classes):
+def get_instance_segmentation_model(num_classes, pretrained=True):
     # load an instance segmentation model pre-trained on COCO
-    model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
+    model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=pretrained)
 
     # get the number of input features for the classifier
     in_features = model.roi_heads.box_predictor.cls_score.in_features
@@ -640,4 +683,4 @@ def get_instance_segmentation_model(num_classes):
                                                        hidden_layer,
                                                        num_classes)
 
-    return model
+    return model    

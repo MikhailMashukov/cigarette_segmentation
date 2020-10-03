@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+import torch
 
 def get_mask(img_id, annotations):
     """Returns mask.
@@ -82,3 +82,39 @@ def decode_rle(rle_mask, shape=(512, 512)):
         img[low:high] = 255
 
     return img.reshape(shape)
+
+def printProgress(str, printToConsole=True):
+    with open('progress.log', 'a') as file:
+        file.write(str + '\n')
+    if printToConsole:
+        print(str)
+
+def save_model_state(model, fileName):
+    state = {'model': model.state_dict()}
+    torch.save(state, fileName)
+
+def load_model_state(model, fileName):
+    state = torch.load(fileName)
+    # print('state ', state)
+    savedStateDict = state['model']
+    try:
+        c_replacements = [['module.', ''], ]
+        stateDict = {}
+        for name, data in savedStateDict.items():
+            for replRule in c_replacements:
+                name = name.replace(replRule[0], replRule[1])
+            stateDict[name] = data
+        result = model.load_state_dict(stateDict, strict=1)
+        print('State loaded from %s (%s)' % (fileName, result))
+        del state['model']
+        return state
+    except Exception as ex:
+        print("Error in loadState: %s" % str(ex))
+
+    if len(savedStateDict) != len(model.state_dict()):
+        raise Exception('You are trying to load parameters for %d layers, but the model has %d' %
+                        (len(savedStateDict), len(self.state_dict())))
+
+    del state['model']
+    return state
+
