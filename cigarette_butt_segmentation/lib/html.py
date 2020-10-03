@@ -6,7 +6,7 @@ from PIL import Image
 from datetime import datetime
 
 
-def generate_html(path_to_data):
+def generate_html(path_to_data, max_img_count=None):
     """Generates content of html file and saves it.
 
     Parameters
@@ -30,12 +30,15 @@ def generate_html(path_to_data):
         ["/".join(path.split("/")[-2:]) for path in glob(f"{path_to_data}/*_pred_mask.png")])
     paths_to_crops = sorted(
         ["/".join(path.split("/")[-2:]) for path in glob(f"{path_to_data}/*_crop.png")])
-    for ind, (path_to_img, path_to_mask, path_to_crop) in enumerate(zip(paths_to_imgs,
-                                                                        paths_to_masks,
-                                                                        paths_to_crops)):
+
+    paths_zip = zip(paths_to_imgs, paths_to_masks, paths_to_crops)
+    print(list(paths_zip)[0], len(list(paths_zip)))
+    if max_img_count is not None:
+        paths_zip = list(paths_zip)[:max_img_count]
+    for ind, (path_to_img, path_to_mask, path_to_crop) in enumerate(paths_zip):
         if not ind % 2:
             html += "<tr>\n"
-        html += f"<td width='240' valign='top'><img src='{path_to_img}'"
+        html += f"<td width='240' valign='top'>{path_to_img}<br><img src='{path_to_img}'"
         html += "alt='Something went wrong.'"
         html += f"height='320' title='Original image:\n{path_to_img}'></td>\n"
         html += f"<td width='240' valign='top'><img src='{path_to_mask}'"
@@ -58,8 +61,9 @@ def generate_html(path_to_data):
     return html
 
 
-def get_html(paths_to_imgs, pred_masks, path_to_save="results/test"):
-    """Generates html file and saves it.
+def generate_images_for_html(paths_to_imgs, pred_masks, path_to_save="results/test"):
+    """Generates images for html file. 
+    Run generate_html after on the same folder to get html. 
 
     Parameters
     ----------
@@ -96,6 +100,6 @@ def get_html(paths_to_imgs, pred_masks, path_to_save="results/test"):
         crop_img[pred_mask == 0] = 0
         Image.fromarray(crop_img).save(f"{path_to_save}/{img_id}_crop.png")
 
-    html = generate_html(path_to_save)
+    # html = generate_html(path_to_save)
 
-    return html
+    # return html

@@ -7,6 +7,10 @@
 node_modules/
 dist/
 
+# Images and output
+*/data/cig_butts/
+results/
+
 # Compiled Java class files
 *.class
 
