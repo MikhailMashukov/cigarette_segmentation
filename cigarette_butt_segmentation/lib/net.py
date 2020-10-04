@@ -142,7 +142,8 @@ class CigDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.imgs)
 
-    def _create_target(self, mask, img_idx):
+    @staticmethod
+    def _create_target(mask, img_idx):
         # instances are encoded as different colors
         obj_ids = np.unique(mask)
         # first id is the background, so remove it

@@ -31,14 +31,6 @@ def get_dataset(name, image_set, transform):
     return ds, num_classes
 
 
-def get_transform(train):
-    transforms = []
-    transforms.append(T.ToTensor())
-    if train:
-        transforms.append(T.RandomHorizontalFlip(0.5))
-    return T.Compose(transforms)
-
-
 def main(args):
     utils.init_distributed_mode(args)
     print(args)
@@ -48,8 +40,8 @@ def main(args):
     # Data loading code
     print("Loading data")
 
-    dataset, num_classes = get_dataset(args.dataset, "train", get_transform(train=True))
-    dataset_test, _ = get_dataset(args.dataset, "val", get_transform(train=False))
+    dataset, num_classes = get_dataset(args.dataset, "train", T.get_transform(train=True))
+    dataset_test, _ = get_dataset(args.dataset, "val", T.get_transform(train=False))
 
     print("Creating data loaders")
     if args.distributed:
