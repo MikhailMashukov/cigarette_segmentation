@@ -7,11 +7,12 @@ import torchvision.models.detection.mask_rcnn
 
 from .coco_utils import get_coco_api_from_dataset
 from .coco_eval import CocoEvaluator
-from .utils import *
+from .det_utils import *
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
+def train_one_epoch(model, optimizer, data_loader, device, epoch, 
+                    print_freq, printFunc=print):
     model.train()
-    metric_logger = MetricLogger(delimiter="  ")
+    metric_logger = MetricLogger(delimiter="  ", printFunc=printFunc)
     metric_logger.add_meter('lr', SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
 
@@ -38,8 +39,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         loss_value = losses_reduced.item()
 
         if not math.isfinite(loss_value):
-            print("Loss is {}, stopping training".format(loss_value))
-            print(loss_dict_reduced)
+            printFunc("Loss is {}, stopping training".format(loss_value))
+            printFunc(loss_dict_reduced)
             sys.exit(1)
 
         optimizer.zero_grad()
@@ -66,13 +67,13 @@ def _get_iou_types(model):
 
 
 @torch.no_grad()
-def evaluate(model, data_loader, device):
+def evaluate(model, data_loader, device, printFunc=print):
     n_threads = torch.get_num_threads()
     # FIXME remove this and make paste_masks_in_image run on the GPU
     torch.set_num_threads(1)
     cpu_device = torch.device("cpu")
     model.eval()
-    metric_logger = MetricLogger(delimiter="  ")
+    metric_logger = MetricLogger(delimiter="  ", printFunc=printFunc)
     header = 'Test:'
 
     coco = get_coco_api_from_dataset(data_loader.dataset)
@@ -101,7 +102,7 @@ def evaluate(model, data_loader, device):
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
-    print("Averaged stats:", metric_logger)
+    printFunc("Averaged stats: %s" % str(metric_logger))
     coco_evaluator.synchronize_between_processes()
 
     # accumulate predictions from all images

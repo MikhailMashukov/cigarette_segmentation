@@ -17,9 +17,10 @@ class SmoothedValue(object):
     window or the global series average.
     """
 
-    def __init__(self, window_size=20, fmt=None):
+    def __init__(self, window_size=20, fmt=None, printFunc=print):
         if fmt is None:
             fmt = "{median:.4f} ({global_avg:.4f})"
+        self.printFunc = printFunc
         self.deque = deque(maxlen=window_size)
         self.total = 0.0
         self.count = 0
@@ -145,9 +146,10 @@ def reduce_dict(input_dict, average=True):
 
 
 class MetricLogger(object):
-    def __init__(self, delimiter="\t"):
+    def __init__(self, delimiter="\t", printFunc=print):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
+        self.printFunc = printFunc
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
@@ -185,8 +187,8 @@ class MetricLogger(object):
             header = ''
         start_time = time.time()
         end = time.time()
-        iter_time = SmoothedValue(fmt='{avg:.4f}')
-        data_time = SmoothedValue(fmt='{avg:.4f}')
+        iter_time = SmoothedValue(fmt='{avg:.4f}', printFunc=self.printFunc)
+        data_time = SmoothedValue(fmt='{avg:.4f}', printFunc=self.printFunc)
         space_fmt = ':' + str(len(str(len(iterable)))) + 'd'
         log_msg = self.delimiter.join([
             header,
@@ -205,7 +207,7 @@ class MetricLogger(object):
             if i % print_freq == 0 or i == len(iterable) - 1:
                 eta_seconds = iter_time.global_avg * (len(iterable) - i)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
-                print(log_msg.format(
+                self.printFunc(log_msg.format(
                     i, len(iterable), eta=eta_string,
                     meters=str(self),
                     time=str(iter_time), data=str(data_time),
@@ -214,7 +216,7 @@ class MetricLogger(object):
             end = time.time()
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-        print('{} Total time: {} ({:.4f} s / it)'.format(
+        self.printFunc('{} Total time: {} ({:.4f} s / it)'.format(
             header, total_time_str, total_time / len(iterable)))
 
 

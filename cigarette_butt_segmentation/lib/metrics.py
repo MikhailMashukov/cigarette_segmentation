@@ -32,6 +32,7 @@ def dice(true, pred):
 
     intersection = (true & pred).sum()
     im_sum = true.sum() + pred.sum()
+    # print('int %.2f, im_sum %.2f' % (intersection, im_sum))
 
     return 2.0 * intersection / (im_sum + EPS)
 

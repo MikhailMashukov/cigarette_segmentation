@@ -83,6 +83,22 @@ def decode_rle(rle_mask, shape=(512, 512)):
 
     return img.reshape(shape)
 
+def expand_bbox(bbox, pixels, max_size):
+    """Expands bounding box (left, top, right, bottom) by pixels pixels in each direction
+       May work for some other formats too (top, left, bottom, right) for example
+    """
+
+    def correct(v):
+        if v < 0:
+            return 0
+        elif v >= max_size:
+            return max_size
+        else:
+            return v
+    return (correct(bbox[0] - pixels), correct(bbox[1] - pixels), 
+            correct(bbox[2] + pixels), correct(bbox[3] + pixels))
+
+
 def printProgress(str, printToConsole=True):
     with open('progress.log', 'a') as file:
         file.write(str + '\n')
