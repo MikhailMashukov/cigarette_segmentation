@@ -86,9 +86,6 @@ def _get_iou_types(model):
         iou_types.append("keypoints")
     return iou_types
 
-s = None
-p = None
-d = None
 def engine_get_dice(target, pred, threshold=0.5):
     """Analogue of lib.metrics.get_dice.
 
@@ -100,17 +97,7 @@ def engine_get_dice(target, pred, threshold=0.5):
     by uniting target masks first and then separated checking of each predicted mask for union
     with this united target.
     """
-    global s
-    global p
-    s = target
-    p = pred
-    # assert isinstance(src_targets, tuple) and len(src_targets) == 1
-    # assert isinstance(outputs, list) and len(outputs) == 1
-    # # print(outputs)
-    # target = src_targets[0]
-    # pred = outputs[0]
 
-    # print(src_targets)
     target_mask_count = target['masks'].shape[0]
     if target_mask_count == 0:
         return 0
@@ -121,8 +108,6 @@ def engine_get_dice(target, pred, threshold=0.5):
         # sumStr += ', ' + str((target['masks'][i].numpy() > 0).sum())
     target_mask = (target_mask_sum > 0)
 
-    # print(target_mask_sum.shape, np.where(target_mask))
-    # print('engine_get_dice', 'target_mask.sum()', target_mask.sum(), pred['masks'].shape)
     pred_mask_count = pred['masks'].shape[0]
     if pred_mask_count == 0:
         return 0
@@ -133,7 +118,6 @@ def engine_get_dice(target, pred, threshold=0.5):
     preds = pred['masks'].numpy() > threshold
     for mask_ind in range(pred_mask_count):
         pred_mask = preds[mask_ind, 0]
-        # print('pred_mask ', pred_mask.shape)
         # sumStr += ', ' + str((target_mask & pred_mask).sum())
         intersection_sum += (target_mask & pred_mask).sum()
         im_sum += pred_mask.sum()
@@ -174,11 +158,8 @@ def evaluate(model, data_loader, device, printFunc=print):
     threshold = 0.5
     for images, src_targets in metric_logger.log_every(data_loader, 100, header):
         # Processing batch of images (can be for example 8 for train and 1 for test)
-        # print('eval', image.size)
         images = images_to_device(images, device)
         targets = targets_to_device(src_targets, device)
-        # images = list(img.to(device) for img in images)
-        # targets = [{k: v.to(device) for k, v in t.items()} for t in src_targets]
 
         torch.cuda.synchronize()
         model_time = time.time()
@@ -199,10 +180,6 @@ def evaluate(model, data_loader, device, printFunc=print):
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
-    global d
-    d = dices
-    # printFunc("Dices: %s" % (str(dices)))
-    print(type(np.mean(dices)))
 
     printFunc("Averaged stats: dice %.5f, %s" % (np.mean(dices), str(metric_logger)))
     printFunc("Dices: %s" % str(dices))

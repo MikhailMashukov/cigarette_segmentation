@@ -8,12 +8,9 @@ import time
 
 import torch
 import torch.utils.data
-from torch import nn
 import torchvision
 import torchvision.models.detection
 import torchvision.models.detection.mask_rcnn
-
-from torchvision import transforms
 
 from .coco_utils import get_coco, get_coco_kp
 

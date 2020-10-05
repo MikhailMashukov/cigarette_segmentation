@@ -16,11 +16,10 @@ Placed here in order not to overload them.
 
 import numpy as np
 import random
-import torch
 
 from torchvision.transforms import functional as F
 
-from ..net import CigDataset   
+from ..dataset import CigDataset   
     # Ugly import (because it is from generally independent module of the same level), 
     # but it economizes a lot of work and copy-paste
     # for keeping the same structures and torch types in target
@@ -64,6 +63,7 @@ class RandomHorizontalFlip(object):
                 target["keypoints"] = keypoints
         return image, target
 
+
 def debugPrint(str, printToConsole=False):
     with open('results/debug.log', 'a') as file:
         file.write(str + '\n')
@@ -80,7 +80,7 @@ class RandomMaskedObjectCopy(object):
     max_retry_count = 20
     """When new object's copies are created, the place is chosen randomly and then checked for intersections
     with already existing object and copies. If they intersect, the procedure repeats, but no more than
-    this number of times
+    this number of times.
     """
 
     def __init__(self, max_copy_count=1):
@@ -92,46 +92,42 @@ class RandomMaskedObjectCopy(object):
         if target["boxes"].shape[0] == 0:
             return image, target
         bboxes = np.array(target["boxes"] + 0.01, dtype=int)  
-        bbox = bboxes[0]
+        base_bbox = bboxes[0]
             # This will be source bounding box during the entire method
-        # print(bbox)
-        cur_bbox_width = int(bbox[2] - bbox[0])
-        cur_bbox_height = int(bbox[3] - bbox[1])
+        # print(base_bbox)
+        base_bbox_width = int(base_bbox[2] - base_bbox[0])
+        base_bbox_height = int(base_bbox[3] - base_bbox[1])
         num_objs = bboxes.shape[0]
         
-        obj_mask = np.array(target['masks'][0][bbox[1] : bbox[3] + 1, bbox[0] : bbox[2] + 1])
+        obj_mask = np.array(target['masks'][0][base_bbox[1] : base_bbox[3] + 1, base_bbox[0] : base_bbox[2] + 1])
             # Bboxes in our dataset has format (left x, top y, right x, bottom y)
             # and despite typical ranges convention, right and bottom pixels are included. So +1
-        # plt.imshow(obj_mask)
         pixels_coords = np.where(obj_mask > 0)
 
         # Gathering potential array of masks with 1s, 2s and so on back into one matrix
         cur_masks = np.array(target['masks'])
-        # print('cur', np.multiply(cur_masks[0], cur_masks[0]).shape)
-        mask = cur_masks[0]
         assert num_objs <= 1 or (num_objs > 1 and \
                 np.sum(np.multiply(cur_masks[0], cur_masks[1])) == 0)
             # Simplified condition that objects don't intersect. Actually usually 
             # there will be 1 object
         full_mask = np.sum(cur_masks, axis=0)
-        # print('new_mask', new_mask.min(), new_mask.max(), new_mask)
 
         image = np.array(image)
         for new_obj_ind in range(self.max_copy_count):
             retry_ind = 1
             while retry_ind <= self.max_retry_count:
-                new_coords = (random.randrange(width - cur_bbox_width),
-                              random.randrange(height - cur_bbox_height))
+                new_coords = (random.randrange(width - base_bbox_width),
+                              random.randrange(height - base_bbox_height))
                 new_bbox = np.array([new_coords[0], new_coords[1], 
-                                     new_coords[0] + cur_bbox_width, new_coords[1] + cur_bbox_height])
+                                     new_coords[0] + base_bbox_width, new_coords[1] + base_bbox_height])
                 intersect_found = False   
                 for obj_ind in range(num_objs):
-                    bbox2 = bboxes[obj_ind]                        
+                    bbox2 = bboxes[obj_ind]
+                    # The logic below is similar to the one in pycocotools
+                    # Take maximums of minimum coordinates (left x and top y) and minimums of maximum ones
                     lt = np.maximum(bbox2[:2], new_bbox[:2])
                     rb = np.minimum(bbox2[2:], new_bbox[2:]) 
                     wh = (rb - lt)
-                    # inter = wh[0] * wh[1]
-                    # print('%s - %s intersection: %s' % (str(bbox2), str(new_bbox), str(wh)))
                     if wh[0] > 0 and wh[1] > 0:
                         intersect_found = True
                         # debugPrint('New obj %d, retry %d: %s - %s (%d)' % \
@@ -146,26 +142,18 @@ class RandomMaskedObjectCopy(object):
 
             # Finally free place for new object found
             
-            # import matplotlib.pyplot as plt
-
-            new_pixels_coords = (pixels_coords[0] + new_bbox[1] - bbox[1], 
-                                    pixels_coords[1] + new_bbox[0] - bbox[0])
-            # image[pixels_coords] = 2
-            image[new_bbox[1] : new_bbox[3] + 1, 
+            image[new_bbox[1] : new_bbox[3] + 1,
                     new_bbox[0] : new_bbox[2] + 1, :][obj_mask > 0, :] = \
-                image[bbox[1] : bbox[3] + 1, 
-                        bbox[0] : bbox[2] + 1, :][obj_mask > 0, :]
-            # plt.imshow(image)
+                image[base_bbox[1] : base_bbox[3] + 1,
+                        base_bbox[0] : base_bbox[2] + 1, :][obj_mask > 0, :]
             num_objs += 1
             bboxes = np.concatenate([bboxes, np.expand_dims(new_bbox, 0)], axis=0)
             full_mask[new_bbox[1] : new_bbox[3] + 1, 
                       new_bbox[0] : new_bbox[2] + 1][obj_mask > 0] = num_objs
         target = CigDataset._create_target(full_mask, int(target["image_id"]))
-        # plt.imshow(full_mask)
-               
-        # plt.show()
         return image, target
         
+
 class ToTensor(object):
     def __call__(self, image, target):
         image = F.to_tensor(image)
