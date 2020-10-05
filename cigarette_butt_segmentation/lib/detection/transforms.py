@@ -49,7 +49,7 @@ class RandomHorizontalFlip(object):
         return image, target
 
 def debugPrint(str, printToConsole=False):
-    with open('debug.log', 'a') as file:
+    with open('results/debug.log', 'a') as file:
         file.write(str + '\n')
     if printToConsole:
         print(str)
@@ -177,8 +177,8 @@ class RandomMaskedObjectCopy(object):
                     # print('%s - %s intersection: %s' % (str(bbox2), str(new_bbox), str(wh)))
                     if wh[0] > 0 and wh[1] > 0:
                         intersect_found = True
-                        debugPrint('New obj %d, retry %d: %s - %s (%d)' % \
-                              (new_obj_ind + 1, retry_ind, str(new_bbox), str(bbox2), obj_ind))
+                        # debugPrint('New obj %d, retry %d: %s - %s (%d)' % \
+                        #       (new_obj_ind + 1, retry_ind, str(new_bbox), str(bbox2), obj_ind))
                         break
                 if not intersect_found:
                     break
@@ -221,8 +221,8 @@ def get_transform(train):
     if train:
         transforms.append(RandomMaskedObjectCopy(10))
     transforms.append(ToTensor())
-    # if train:
+    if train:
         # during training, randomly flip the training images
         # and ground-truth for data augmentation
-        # transforms.append(RandomHorizontalFlip(0.5))        
+        transforms.append(RandomHorizontalFlip(0.5))        
     return Compose(transforms)

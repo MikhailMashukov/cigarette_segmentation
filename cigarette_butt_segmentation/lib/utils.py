@@ -100,7 +100,7 @@ def expand_bbox(bbox, pixels, max_size):
 
 
 def printProgress(str, printToConsole=True):
-    with open('progress.log', 'a') as file:
+    with open('results/progress.log', 'a') as file:
         file.write(str + '\n')
     if printToConsole:
         print(str)

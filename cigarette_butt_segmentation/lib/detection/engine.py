@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import sys
 import time
 import torch
@@ -8,6 +9,7 @@ import torchvision.models.detection.mask_rcnn
 from .coco_utils import get_coco_api_from_dataset
 from .coco_eval import CocoEvaluator
 from .det_utils import *
+from ..metrics import EPS
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, 
                     print_freq, printFunc=print):
@@ -65,7 +67,50 @@ def _get_iou_types(model):
         iou_types.append("keypoints")
     return iou_types
 
+s = None
+p = None
+d = None
+def engine_get_dice(target, pred, threshold=0.5):
+    global s
+    global p
+    s = target
+    p = pred
+    # assert isinstance(src_targets, tuple) and len(src_targets) == 1
+    # assert isinstance(outputs, list) and len(outputs) == 1
+    # # print(outputs)
+    # target = src_targets[0]
+    # pred = outputs[0]
 
+    # print(src_targets)
+    target_mask_count = target['masks'].shape[0]
+    if target_mask_count == 0:
+        return 0
+    target_mask_sum = target['masks'][0].numpy()
+    # sumStr = ''
+    for i in range(1, target_mask_count):
+        target_mask_sum += target['masks'][i].numpy()
+        # sumStr += ', ' + str((target['masks'][i].numpy() > 0).sum())
+    target_mask = (target_mask_sum > 0)
+
+    # print(target_mask_sum.shape, np.where(target_mask))
+    # print('engine_get_dice', 'target_mask.sum()', target_mask.sum(), pred['masks'].shape)
+    pred_mask_count = pred['masks'].shape[0]
+    if pred_mask_count == 0:
+        return 0
+        
+    intersection_sum = 0
+    im_sum = target_mask.sum()
+    # sumStr += '; '
+    preds = pred['masks'].numpy() > threshold
+    for mask_ind in range(pred_mask_count):
+        pred_mask = preds[mask_ind, 0]
+        # print('pred_mask ', pred_mask.shape)
+        # sumStr += ', ' + str((target_mask & pred_mask).sum())
+        intersection_sum += (target_mask & pred_mask).sum()
+        im_sum += pred_mask.sum()
+    # print(sumStr)
+    return 2.0 * intersection_sum / (im_sum + EPS)
+        
 @torch.no_grad()
 def evaluate(model, data_loader, device, printFunc=print):
     n_threads = torch.get_num_threads()
@@ -80,12 +125,15 @@ def evaluate(model, data_loader, device, printFunc=print):
     iou_types = _get_iou_types(model)
     coco_evaluator = CocoEvaluator(coco, iou_types)
 
-    for image, targets in metric_logger.log_every(data_loader, 100, header):
-        # print(image)
-        images = images_to_device(image, device)
-        targets = targets_to_device(targets, device)
-        # image = list(img.to(device) for img in image)
-        # targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+    dices = []
+    threshold = 0.5
+    for images, src_targets in metric_logger.log_every(data_loader, 100, header):
+        # Processing batch of images (can be for example 8 for train and 1 for test)
+        # print('eval', image.size)
+        images = images_to_device(images, device)
+        targets = targets_to_device(src_targets, device)
+        # images = list(img.to(device) for img in images)
+        # targets = [{k: v.to(device) for k, v in t.items()} for t in src_targets]
 
         torch.cuda.synchronize()
         model_time = time.time()
@@ -93,6 +141,10 @@ def evaluate(model, data_loader, device, printFunc=print):
 
         outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
+
+        assert isinstance(src_targets, tuple) 
+        for i in range(len(src_targets)):
+            dices.append(engine_get_dice(src_targets[i], outputs[i], threshold))
 
         res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
         evaluator_time = time.time()
@@ -102,7 +154,13 @@ def evaluate(model, data_loader, device, printFunc=print):
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
-    printFunc("Averaged stats: %s" % str(metric_logger))
+    global d
+    d = dices
+    # printFunc("Dices: %s" % (str(dices)))
+    print(type(np.mean(dices)))
+
+    printFunc("Averaged stats: dice %.5f, %s" % (np.mean(dices), str(metric_logger)))
+    printFunc("Dices: %s" % str(dices))
     coco_evaluator.synchronize_between_processes()
 
     # accumulate predictions from all images

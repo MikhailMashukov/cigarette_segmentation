@@ -18,6 +18,8 @@ from . import det_utils
 
 class CocoEvaluator(object):
     def __init__(self, coco_gt, iou_types):
+        """As we can see below, iou_types is a list of "bbox", "segm" and "keypoints"""
+ 
         assert isinstance(iou_types, (list, tuple))
         coco_gt = copy.deepcopy(coco_gt)
         self.coco_gt = coco_gt
