@@ -158,16 +158,3 @@ class ToTensor(object):
     def __call__(self, image, target):
         image = F.to_tensor(image)
         return image, target
-
-
-def get_transform(train):
-    transforms = []
-    # converts a PIL image into PyTorch Tensor
-    # if train:
-    #     transforms.append(RandomMaskedObjectCopy(10))
-    transforms.append(ToTensor())
-    if train:
-        # during training, randomly flip the training images
-        # and ground-truth for data augmentation
-        transforms.append(RandomHorizontalFlip(0.5))        
-    return Compose(transforms)

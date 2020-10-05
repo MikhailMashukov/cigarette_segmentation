@@ -37,7 +37,6 @@ def generate_html(path_to_data, max_img_count=None):
         ["/".join(path.split("/")[-2:]) for path in glob(f"{path_to_data}/*_crop.png")])
 
     paths_zip = zip(paths_to_imgs, paths_to_masks, paths_to_crops)
-    print(list(paths_zip)[0], len(list(paths_zip)))
     if max_img_count is not None:
         paths_zip = list(paths_zip)[:max_img_count]
     for ind, (path_to_img, path_to_mask, path_to_crop) in enumerate(paths_zip):
