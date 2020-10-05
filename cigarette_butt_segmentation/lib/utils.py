@@ -104,6 +104,25 @@ def expand_bbox(bbox, pixels, max_size):
             correct(bbox[2] + pixels), correct(bbox[3] + pixels))
 
 
+def find_nearest_bbox(bbox, candidate_bboxes):
+    """Primitive method for searching closest bounding box. In our case candidates are very sparsed,
+    so any approach will work.
+
+    :return index of the bbox in candidate_bboxes
+    """
+
+    min_distance = None
+    nearest_bbox_idx = None
+    for i in range(candidate_bboxes.shape[0]):
+        difference = np.abs(bbox[:2], candidate_bboxes[i, :2])
+        distance = difference[0] + difference[1]
+        if min_distance is None or min_distance > distance:
+            min_distance = distance
+            # nearest_bbox = candidate_bboxes[i]
+            nearest_bbox_idx = i
+    return nearest_bbox_idx
+
+
 def printProgress(str, printToConsole=True):
     with open('results/progress.log', 'a') as file:
         file.write(str + '\n')

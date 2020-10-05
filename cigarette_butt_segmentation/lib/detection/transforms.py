@@ -163,8 +163,8 @@ class ToTensor(object):
 def get_transform(train):
     transforms = []
     # converts a PIL image into PyTorch Tensor
-    if train:
-        transforms.append(RandomMaskedObjectCopy(10))
+    # if train:
+    #     transforms.append(RandomMaskedObjectCopy(10))
     transforms.append(ToTensor())
     if train:
         # during training, randomly flip the training images
