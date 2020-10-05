@@ -1,3 +1,7 @@
+"""Tricky and powerful object for extensive statistics calculation. You will unlikely need to touch it
+when you are only starting with detection/segmentation. I didn't, only changed imports to keep them correct.
+"""
+
 import json
 import tempfile
 

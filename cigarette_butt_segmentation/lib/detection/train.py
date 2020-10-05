@@ -1,3 +1,7 @@
+"""This module is intended to be run as a standalone script. It performs full training process.
+One of pre-built models and datasets can be choosen.
+"""
+
 import datetime
 import os
 import time
@@ -32,7 +36,7 @@ def get_dataset(name, image_set, transform):
 
 
 def main(args):
-    utils.init_distributed_mode(args)
+    det_utils.init_distributed_mode(args)
     print(args)
 
     device = torch.device(args.device)
@@ -60,12 +64,12 @@ def main(args):
 
     data_loader = torch.utils.data.DataLoader(
         dataset, batch_sampler=train_batch_sampler, num_workers=args.workers,
-        collate_fn=utils.collate_fn)
+        collate_fn=det_utils.collate_fn)
 
     data_loader_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=1,
         sampler=test_sampler, num_workers=args.workers,
-        collate_fn=utils.collate_fn)
+        collate_fn=det_utils.collate_fn)
 
     print("Creating model")
     model = torchvision.models.detection.__dict__[args.model](num_classes=num_classes,
@@ -102,7 +106,7 @@ def main(args):
         train_one_epoch(model, optimizer, data_loader, device, epoch, args.print_freq)
         lr_scheduler.step()
         if args.output_dir:
-            utils.save_on_master({
+            det_utils.save_on_master({
                 'model': model_without_ddp.state_dict(),
                 'optimizer': optimizer.state_dict(),
                 'lr_scheduler': lr_scheduler.state_dict(),
@@ -164,6 +168,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.output_dir:
-        utils.mkdir(args.output_dir)
+        det_utils.mkdir(args.output_dir)
 
     main(args)

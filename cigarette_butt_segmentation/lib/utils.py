@@ -1,3 +1,7 @@
+"""Your module with methods, useful for data retrieval and visualization for example in Jupyter Notebooks.
+I have also added for example methods for storing/loading state of a model to a file.
+"""
+
 import cv2
 import numpy as np
 import torch
@@ -83,6 +87,7 @@ def decode_rle(rle_mask, shape=(512, 512)):
 
     return img.reshape(shape)
 
+
 def expand_bbox(bbox, pixels, max_size):
     """Expands bounding box (left, top, right, bottom) by pixels pixels in each direction
        May work for some other formats too (top, left, bottom, right) for example
@@ -104,6 +109,7 @@ def printProgress(str, printToConsole=True):
         file.write(str + '\n')
     if printToConsole:
         print(str)
+
 
 def save_model_state(model, fileName):
     state = {'model': model.state_dict()}

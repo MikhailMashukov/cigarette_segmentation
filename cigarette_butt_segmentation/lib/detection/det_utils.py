@@ -1,3 +1,8 @@
+"""Small, quite low-level utilities, used by the detection module. I renamed them in order not to mix up with lib.utils.
+I only extracted a bit of code from engine module into images_to_device and targets_to_device methods
+in order to reproduce similar evaluation on images.
+"""
+
 from __future__ import print_function
 
 from collections import defaultdict, deque

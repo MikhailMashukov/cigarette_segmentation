@@ -1,3 +1,5 @@
+"""Very unlikely you will need to investigate this module"""
+
 import bisect
 from collections import defaultdict
 import copy

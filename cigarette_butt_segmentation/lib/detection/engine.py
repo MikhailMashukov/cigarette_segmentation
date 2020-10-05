@@ -1,3 +1,7 @@
+"""For your Jupyter Notebook you will need train_one_epoch and evaluate methods from this module
+   and no more.
+"""
+
 import math
 import numpy as np
 import sys
@@ -13,6 +17,21 @@ from ..metrics import EPS
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, 
                     print_freq, printFunc=print):
+    """Perform training of your model on the entire dataset. Meaning of all parameters is obvious.
+
+    Parameters
+    ----------
+    ...
+    printFunc : method of the form def print(str)
+        Useful for saving train_one_epoch's output to a file for a case you disconnect your Jupyter Notebook
+        from the server and wouldn't see some results.
+
+    Notes
+    ----------
+    The method prints intermediate results since they can be useful while you are awaiting for finish
+    and to show that the process is going forward.
+    """
+
     model.train()
     metric_logger = MetricLogger(delimiter="  ", printFunc=printFunc)
     metric_logger.add_meter('lr', SmoothedValue(window_size=1, fmt='{value:.6f}'))
@@ -71,6 +90,16 @@ s = None
 p = None
 d = None
 def engine_get_dice(target, pred, threshold=0.5):
+    """Analogue of lib.metrics.get_dice.
+
+    Notes
+    -----
+    lib.metrics.get_dice. takes prepared arrays, but here we need to extract multiple masks
+    from tricky data structures.
+    Since target masks in cigarettes case shouldn't intersect, the method was speeded up
+    by uniting target masks first and then separated checking of each predicted mask for union
+    with this united target.
+    """
     global s
     global p
     s = target
@@ -113,6 +142,22 @@ def engine_get_dice(target, pred, threshold=0.5):
         
 @torch.no_grad()
 def evaluate(model, data_loader, device, printFunc=print):
+    """Evaluates and prints extensive statistics on the entire dataset, given in the form of data_loader.
+
+    Parameters
+    ----------
+    ...
+    printFunc : method of the form def print(str)
+        See comments for it at train_one_epoch's comments.
+
+    Notes
+    -----
+    Warning: can be slow for big train dataset. I didn't catch (had no time for this) why
+    get_coco_api_from_dataset is so slow. Just in case you need to speed this up to debug something,
+    torch.utils.data.Subset(dataset, ...) didn't help for me. The only thing that helped me -
+    return less in your source dataset's object __len__ method
+    """
+
     n_threads = torch.get_num_threads()
     # FIXME remove this and make paste_masks_in_image run on the GPU
     torch.set_num_threads(1)

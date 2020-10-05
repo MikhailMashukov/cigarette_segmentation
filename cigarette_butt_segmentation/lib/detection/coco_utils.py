@@ -1,3 +1,7 @@
+"""Looks like utilities for coco_eval.py. You will unlikely need to touch it
+when you are only starting with detection/segmentation.
+"""
+
 import copy
 import os
 from PIL import Image

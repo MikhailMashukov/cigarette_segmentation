@@ -1,3 +1,5 @@
+"""Module for assembling Mask R-CNN, applicable for cigarettes segmentation"""
+
 import torch
 import torch.nn as nn
 from torchvision.models.utils import load_state_dict_from_url
@@ -94,6 +96,8 @@ class ToTensor_Chip(object):
 
 
 class CigDataset(torch.utils.data.Dataset):
+    """Our cigarettes train or test images in the form for feeding to model"""
+
     def __init__(self, root, transform=None):
         self.root = root
         self.transform = transform
@@ -140,6 +144,7 @@ class CigDataset(torch.utils.data.Dataset):
         return img, target # {'mask': target}
 
     def __len__(self):
+        # return 110      # The only way I have found to speed up evaluate on the dataset
         return len(self.imgs)
 
     @staticmethod

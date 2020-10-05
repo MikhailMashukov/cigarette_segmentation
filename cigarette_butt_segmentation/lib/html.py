@@ -1,3 +1,8 @@
+"""Your source htmls generation module.
+I have found very confusing that it adds files to a folder and then transforms all existing files
+into an html. So divided it onto two methods so this would be more visible.
+"""
+
 import os
 import numpy as np
 
@@ -7,7 +12,7 @@ from datetime import datetime
 
 
 def generate_html(path_to_data, max_img_count=None):
-    """Generates content of html file and saves it.
+    """Generates content of html file based on all images in a folder and saves this html.
 
     Parameters
     ----------
